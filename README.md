@@ -145,6 +145,8 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 从 `v1.0.5` 开始，新安装时选择安装位置后，安装器会自动在所选目录下创建 `komari-desk` 子文件夹。例如选择 `G:\Enviroment`，实际安装目录会变成 `G:\Enviroment\komari-desk`，避免程序文件散落在父目录中。
 
+从 `v1.0.7` 开始，安装器会优先检测已有安装目录。它会依次读取当前用户安装记录、桌面快捷方式和常见安装目录；如果检测到旧版本，会默认覆盖原目录更新，并继续保留已有 `widget.json`。新安装完成后会记录安装目录，后续升级不需要用户重新选择文件夹。
+
 ## 常见问题
 
 ### 双击 exe 没有反应
