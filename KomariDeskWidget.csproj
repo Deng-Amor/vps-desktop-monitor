@@ -9,4 +9,11 @@
   <ItemGroup>
     <None Update="widget.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="installer\**\*" />
+    <None Remove="installer\**\*" />
+    <Page Remove="installer\**\*" />
+    <Resource Remove="installer\**\*" />
+    <EmbeddedResource Remove="installer\**\*" />
+  </ItemGroup>
 </Project>

@@ -3,3 +3,4 @@ obj/
 widget.json
 *.zip
 *Setup.exe
+installer/KomariDeskWidgetInstaller/Payload/

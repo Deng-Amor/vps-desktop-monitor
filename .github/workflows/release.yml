@@ -1,0 +1,102 @@
+name: Build and publish release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $version = $tag.TrimStart('v')
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Publish app
+        shell: pwsh
+        run: |
+          dotnet publish KomariDeskWidget.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: Create portable package
+        shell: pwsh
+        run: |
+          $tag = '${{ steps.version.outputs.tag }}'
+          $stage = Join-Path $env:RUNNER_TEMP "KomariDeskWidget-$tag-win-x64"
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          Copy-Item 'bin\Release\net8.0-windows\win-x64\publish\KomariDeskWidget.exe' (Join-Path $stage 'KomariDeskWidget.exe')
+          Copy-Item 'widget.example.json' (Join-Path $stage 'widget.json')
+          Copy-Item 'README.md' (Join-Path $stage 'README.md')
+          Copy-Item 'LICENSE' (Join-Path $stage 'LICENSE')
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath "KomariDeskWidget-$tag-win-x64.zip" -Force
+
+      - name: Prepare installer payload
+        shell: pwsh
+        run: |
+          $payload = 'installer\KomariDeskWidgetInstaller\Payload'
+          New-Item -ItemType Directory -Path $payload -Force | Out-Null
+          Copy-Item "KomariDeskWidget-${{ steps.version.outputs.tag }}-win-x64.zip" (Join-Path $payload 'KomariDeskWidget-win-x64.zip') -Force
+
+      - name: Publish installer
+        shell: pwsh
+        run: |
+          dotnet publish installer\KomariDeskWidgetInstaller\KomariDeskWidgetInstaller.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:AssemblyName=KomariDeskWidget-${{ steps.version.outputs.tag }}-Setup
+          Copy-Item "installer\KomariDeskWidgetInstaller\bin\Release\net8.0-windows\win-x64\publish\KomariDeskWidget-${{ steps.version.outputs.tag }}-Setup.exe" .
+
+      - name: Write release notes
+        shell: pwsh
+        run: |
+          @"
+          ## Komari Desk Widget ${{ steps.version.outputs.tag }}
+
+          ### 下载
+          - 推荐普通用户下载 `KomariDeskWidget-${{ steps.version.outputs.tag }}-Setup.exe`
+          - 想免安装使用的用户下载 `KomariDeskWidget-${{ steps.version.outputs.tag }}-win-x64.zip`
+
+          ### 安装器说明
+          - 可选择安装目录
+          - 可创建桌面快捷方式
+          - 默认安装到当前用户目录，不需要管理员权限
+          - 如果目标目录已有 `widget.json`，安装器会保留原配置
+          "@ | Set-Content -Path RELEASE_NOTES.md -Encoding UTF8
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create '${{ steps.version.outputs.tag }}' `
+            "KomariDeskWidget-${{ steps.version.outputs.tag }}-Setup.exe" `
+            "KomariDeskWidget-${{ steps.version.outputs.tag }}-win-x64.zip" `
+            --title '${{ steps.version.outputs.tag }}' `
+            --notes-file RELEASE_NOTES.md
