@@ -14,6 +14,7 @@
 - 限制最小窗口尺寸，避免缩放过小时出现难看的滚动条
 - 支持锁定窗口位置，避免误拖动
 - 半透明卡片布局，风格接近 Komari 面板
+- 支持在设置页调节面板背景透明度
 - 提供安装器版本，可选择安装目录并创建桌面快捷方式
 - 支持应用内在线检查更新，下载并启动最新版安装器
 - 使用自定义圆形应用图标，桌面快捷方式不再显示默认白纸图标
@@ -85,6 +86,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
   "refreshSeconds": 10,
   "topmost": true,
   "locked": false,
+  "panelOpacity": 91,
   "nodeIds": [
     "0625f4ce-6c6d-4373-b199-32bd9ef28a5b",
     "56969b25-8fc6-42b6-9c27-2d10abf0fcd7"
@@ -100,9 +102,10 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 | `refreshSeconds` | int | 自动刷新间隔（秒），最小 3 秒 |
 | `topmost` | bool | 是否让窗口始终置顶，`true` 为置顶，`false` 为普通窗口 |
 | `locked` | bool | 是否锁定窗口移动，`true` 时无法拖动窗口 |
+| `panelOpacity` | int | 面板背景透明度，范围 `30` 到 `100`，数值越小越透明 |
 | `nodeIds` | string[] | 要显示的节点 UUID 列表；留空数组 `[]` 则显示全部节点 |
 
-也可以点击窗口右上角的 `⚙` 设置按钮，在主界面内切换到设置页，修改置顶状态、锁定状态、刷新间隔，并勾选要展示的节点。
+也可以点击窗口右上角的 `⚙` 设置按钮，在主界面内切换到设置页，修改置顶状态、锁定状态、面板透明度、刷新间隔，并勾选要展示的节点。
 
 ### 如何获取节点 UUID
 
@@ -153,6 +156,8 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 从 `v1.0.9` 开始，应用和安装器使用自定义圆形图标，桌面快捷方式会显示同款图标。
 
 从 `v1.0.11` 开始，锁定按钮恢复为更直观的 🔓 / 🔒 图标；未锁定保持透明背景，锁定后显示橙红色背景，既保留原来的观感，也能清楚区分状态。
+
+从 `v1.0.12` 开始，设置页新增“面板透明度”滑条，可在 `30%` 到 `100%` 之间调节主面板背景透明度，并保存到 `widget.json`。
 
 ## 常见问题
 

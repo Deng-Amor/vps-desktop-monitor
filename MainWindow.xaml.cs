@@ -29,6 +29,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     public string LockButtonForeground => "#FFFFFF";
     public string LockButtonTip => _locked ? "已锁定：不能拖动或缩放，点击解锁" : "未锁定：可以拖动和缩放，点击锁定";
     public string VersionText => $"v{UpdateService.CurrentVersion.ToString(3)}";
+    public string PanelBackground => $"#{OpacityToAlpha(_config.PanelOpacity)}2B3446";
 
     public MainWindow()
     {
@@ -59,6 +60,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Topmost = _config.Topmost;
         _locked = _config.Locked;
         RefreshLockState();
+        OnPropertyChanged(nameof(PanelBackground));
         _timer.Interval = TimeSpan.FromSeconds(Math.Max(3, _config.RefreshSeconds));
     }
 
@@ -133,10 +135,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshBox.Text = _config.RefreshSeconds.ToString();
         TopmostBox.IsChecked = _config.Topmost;
         LockedBox.IsChecked = _config.Locked;
+        PanelOpacitySlider.Value = Math.Clamp(_config.PanelOpacity, 30, 100);
+        UpdatePanelOpacityText();
         DashboardPanel.Visibility = Visibility.Collapsed;
         SettingsPanel.Visibility = Visibility.Visible;
         Footer = "设置";
         await LoadNodesForSettingsAsync();
+    }
+
+    private void PanelOpacityChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        UpdatePanelOpacityText();
+    }
+
+    private void UpdatePanelOpacityText()
+    {
+        if (PanelOpacityText is not null)
+        {
+            PanelOpacityText.Text = $"{PanelOpacitySlider.Value:0}%";
+        }
     }
 
     private async void RefreshNodes(object sender, RoutedEventArgs e) => await LoadNodesForSettingsAsync();
@@ -207,6 +224,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             RefreshSeconds = Math.Max(3, refreshSeconds),
             Topmost = TopmostBox.IsChecked == true,
             Locked = LockedBox.IsChecked == true,
+            PanelOpacity = Math.Clamp((int)Math.Round(PanelOpacitySlider.Value), 30, 100),
             NodeIds = selectedIds.Length == Nodes.Count ? [] : selectedIds
         };
         SaveConfig();
@@ -241,6 +259,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    private static string OpacityToAlpha(int opacity)
+    {
+        var alpha = (byte)Math.Round(Math.Clamp(opacity, 30, 100) * 255d / 100d);
+        return alpha.ToString("X2");
+    }
 }
 
 public sealed class WidgetConfig
@@ -249,6 +272,7 @@ public sealed class WidgetConfig
     public int RefreshSeconds { get; set; } = 10;
     public bool Topmost { get; set; } = true;
     public bool Locked { get; set; }
+    public int PanelOpacity { get; set; } = 91;
     public string[] NodeIds { get; set; } = [];
 }
 

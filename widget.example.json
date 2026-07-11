@@ -3,5 +3,6 @@
   "refreshSeconds": 10,
   "topmost": true,
   "locked": false,
+  "panelOpacity": 91,
   "nodeIds": []
 }

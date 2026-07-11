@@ -22,7 +22,7 @@
       <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
   </Window.Resources>
-  <Border Background="#E82B3446" BorderBrush="#7B9AB1CC" BorderThickness="1" CornerRadius="18" Padding="14">
+  <Border Background="{Binding PanelBackground}" BorderBrush="#7B9AB1CC" BorderThickness="1" CornerRadius="18" Padding="14">
     <Grid>
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
@@ -124,6 +124,16 @@
                   <CheckBox x:Name="TopmostBox" Content="窗口始终置顶" Foreground="#EEF5FF" Margin="0,0,0,7" />
                   <CheckBox x:Name="LockedBox" Content="锁定窗口移动" Foreground="#EEF5FF" />
                 </StackPanel>
+              </Grid>
+              <Grid Margin="0,12,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="42" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="面板透明度" Foreground="#EEF5FF" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Slider x:Name="PanelOpacitySlider" Grid.Column="1" Minimum="30" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Margin="12,0" ValueChanged="PanelOpacityChanged" />
+                <TextBlock x:Name="PanelOpacityText" Grid.Column="2" Foreground="#EEF5FF" VerticalAlignment="Center" TextAlignment="Right" />
               </Grid>
             </StackPanel>
           </Border>
