@@ -5,12 +5,14 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.0.9</Version>
-    <AssemblyVersion>1.0.9.0</AssemblyVersion>
-    <FileVersion>1.0.9.0</FileVersion>
+    <Version>1.0.10</Version>
+    <AssemblyVersion>1.0.10.0</AssemblyVersion>
+    <FileVersion>1.0.10.0</FileVersion>
     <ApplicationIcon>assets\app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="assets\app.ico" />
+    <Resource Include="assets\app.ico" />
     <None Update="widget.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
