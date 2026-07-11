@@ -37,7 +37,7 @@
         <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
           <Button Style="{StaticResource TinyButton}" Content="↻" Click="Refresh" ToolTip="立即刷新" />
           <Button Style="{StaticResource TinyButton}" Content="⚙" Click="OpenSettings" ToolTip="设置" />
-          <Button Style="{StaticResource TinyButton}" Content="{Binding LockButtonText}" Background="{Binding LockButtonBackground}" Foreground="{Binding LockButtonForeground}" Width="34" FontWeight="Bold" Click="ToggleLock" ToolTip="{Binding LockButtonTip}" />
+          <Button Style="{StaticResource TinyButton}" Content="{Binding LockButtonText}" Background="{Binding LockButtonBackground}" Foreground="{Binding LockButtonForeground}" Click="ToggleLock" ToolTip="{Binding LockButtonTip}" />
           <Button Style="{StaticResource TinyButton}" Content="—" Click="Minimize" ToolTip="最小化" />
           <Button Style="{StaticResource TinyButton}" Content="×" Click="Close" ToolTip="关闭" />
         </StackPanel>

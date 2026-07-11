@@ -24,8 +24,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     public ObservableCollection<ServerCard> Servers { get; } = [];
     public ObservableCollection<NodeSelection> Nodes { get; } = [];
     public string Footer { get => _footer; set { _footer = value; OnPropertyChanged(); } }
-    public string LockButtonText => _locked ? "锁" : "开";
-    public string LockButtonBackground => _locked ? "#EF4444" : "#2563EB";
+    public string LockButtonText => _locked ? "🔒" : "🔓";
+    public string LockButtonBackground => _locked ? "#F97316" : "Transparent";
     public string LockButtonForeground => "#FFFFFF";
     public string LockButtonTip => _locked ? "已锁定：不能拖动或缩放，点击解锁" : "未锁定：可以拖动和缩放，点击锁定";
     public string VersionText => $"v{UpdateService.CurrentVersion.ToString(3)}";
