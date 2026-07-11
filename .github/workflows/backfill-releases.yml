@@ -1,0 +1,158 @@
+name: Backfill historical releases
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/backfill-releases.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  backfill:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Cache installer source
+        shell: pwsh
+        run: |
+          Copy-Item 'installer\KomariDeskWidgetInstaller' "$env:RUNNER_TEMP\KomariDeskWidgetInstaller" -Recurse -Force
+
+      - name: Build v1.0.1 portable package
+        shell: pwsh
+        run: |
+          git checkout v1.0.1
+          dotnet publish KomariDeskWidget.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true
+
+          $stage = Join-Path $env:RUNNER_TEMP 'KomariDeskWidget-v1.0.1-win-x64'
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          Copy-Item 'bin\Release\net8.0-windows\win-x64\publish\KomariDeskWidget.exe' (Join-Path $stage 'KomariDeskWidget.exe')
+          Copy-Item 'widget.example.json' (Join-Path $stage 'widget.json')
+          Copy-Item 'README.md' (Join-Path $stage 'README.md')
+          Copy-Item 'LICENSE' (Join-Path $stage 'LICENSE')
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath "$env:RUNNER_TEMP\KomariDeskWidget-v1.0.1-win-x64.zip" -Force
+
+      - name: Build v1.0.2 portable package
+        shell: pwsh
+        run: |
+          git checkout v1.0.2
+          dotnet publish KomariDeskWidget.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true
+
+          $stage = Join-Path $env:RUNNER_TEMP 'KomariDeskWidget-v1.0.2-win-x64'
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          Copy-Item 'bin\Release\net8.0-windows\win-x64\publish\KomariDeskWidget.exe' (Join-Path $stage 'KomariDeskWidget.exe')
+          Copy-Item 'widget.example.json' (Join-Path $stage 'widget.json')
+          Copy-Item 'README.md' (Join-Path $stage 'README.md')
+          Copy-Item 'LICENSE' (Join-Path $stage 'LICENSE')
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath "$env:RUNNER_TEMP\KomariDeskWidget-v1.0.2-win-x64.zip" -Force
+
+      - name: Build v1.0.2 installer
+        shell: pwsh
+        run: |
+          $installer = "$env:RUNNER_TEMP\KomariDeskWidgetInstaller"
+          $payload = Join-Path $installer 'Payload'
+          New-Item -ItemType Directory -Path $payload -Force | Out-Null
+          Copy-Item "$env:RUNNER_TEMP\KomariDeskWidget-v1.0.2-win-x64.zip" (Join-Path $payload 'KomariDeskWidget-win-x64.zip') -Force
+
+          dotnet publish (Join-Path $installer 'KomariDeskWidgetInstaller.csproj') `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:AssemblyName=KomariDeskWidget-v1.0.2-Setup
+
+          Copy-Item (Join-Path $installer 'bin\Release\net8.0-windows\win-x64\publish\KomariDeskWidget-v1.0.2-Setup.exe') "$env:RUNNER_TEMP\KomariDeskWidget-v1.0.2-Setup.exe" -Force
+
+      - name: Write release notes
+        shell: pwsh
+        run: |
+          @"
+          ## Komari Desk Widget v1.0.1
+
+          ### 新增
+          - 新增设置窗口，可通过右上角 ⚙ 打开
+          - 支持开关窗口始终置顶
+          - 支持从设置窗口刷新节点列表并勾选要展示的节点
+          - `widget.json` 新增 `topmost` 配置项
+
+          ### 优化
+          - 主界面卡片改为更接近 Komari 面板的半透明卡片风格
+          - README 和示例配置已同步更新
+
+          ### 下载
+          - 下载 `KomariDeskWidget-v1.0.1-win-x64.zip` 后解压运行
+          "@ | Set-Content -Path "$env:RUNNER_TEMP\RELEASE_v1.0.1.md" -Encoding UTF8
+
+          @"
+          ## Komari Desk Widget v1.0.2
+
+          ### 新增
+          - 新增窗口锁定功能，点击右上角 🔓 / 🔒 可锁定或解锁窗口移动
+          - 设置窗口新增“锁定窗口移动”选项
+          - 新增右下角缩放手柄，可拖动缩放窗口
+          - 新增安装器版本，可选择安装目录并创建桌面快捷方式
+
+          ### 优化
+          - 拉开卡片之间的间距
+          - 优化卡片内部行距，显示更清爽
+          - 安装器会保留已有 `widget.json`，避免覆盖用户配置
+
+          ### 下载
+          - 推荐普通用户下载 `KomariDeskWidget-v1.0.2-Setup.exe`
+          - 想免安装使用的用户下载 `KomariDeskWidget-v1.0.2-win-x64.zip`
+          "@ | Set-Content -Path "$env:RUNNER_TEMP\RELEASE_v1.0.2.md" -Encoding UTF8
+
+      - name: Create v1.0.1 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if (gh release view v1.0.1 *> $null) {
+            Write-Host 'v1.0.1 release already exists, skipping.'
+          } else {
+            gh release create v1.0.1 `
+              "$env:RUNNER_TEMP\KomariDeskWidget-v1.0.1-win-x64.zip" `
+              --title 'v1.0.1' `
+              --notes-file "$env:RUNNER_TEMP\RELEASE_v1.0.1.md"
+          }
+
+      - name: Create v1.0.2 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if (gh release view v1.0.2 *> $null) {
+            Write-Host 'v1.0.2 release already exists, skipping.'
+          } else {
+            gh release create v1.0.2 `
+              "$env:RUNNER_TEMP\KomariDeskWidget-v1.0.2-Setup.exe" `
+              "$env:RUNNER_TEMP\KomariDeskWidget-v1.0.2-win-x64.zip" `
+              --title 'v1.0.2' `
+              --notes-file "$env:RUNNER_TEMP\RELEASE_v1.0.2.md"
+          }
