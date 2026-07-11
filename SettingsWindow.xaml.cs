@@ -24,12 +24,14 @@ public partial class SettingsWindow : Window
             Endpoint = config.Endpoint,
             RefreshSeconds = config.RefreshSeconds,
             Topmost = config.Topmost,
+            Locked = config.Locked,
             NodeIds = [.. config.NodeIds]
         };
 
         EndpointBox.Text = _config.Endpoint;
         RefreshBox.Text = _config.RefreshSeconds.ToString();
         TopmostBox.IsChecked = _config.Topmost;
+        LockedBox.IsChecked = _config.Locked;
         Loaded += async (_, _) => await LoadNodesAsync();
     }
 
@@ -116,6 +118,7 @@ public partial class SettingsWindow : Window
             Endpoint = EndpointBox.Text.Trim().TrimEnd('/'),
             RefreshSeconds = refreshSeconds,
             Topmost = TopmostBox.IsChecked == true,
+            Locked = LockedBox.IsChecked == true,
             NodeIds = nodeIds
         };
 

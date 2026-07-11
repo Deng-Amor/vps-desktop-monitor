@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
 
@@ -18,9 +19,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _timer = new();
     private WidgetConfig _config = new();
     private string _footer = "正在连接…";
+    private bool _locked;
 
     public ObservableCollection<ServerCard> Servers { get; } = [];
     public string Footer { get => _footer; set { _footer = value; OnPropertyChanged(); } }
+    public string LockButtonText => _locked ? "🔒" : "🔓";
 
     public MainWindow()
     {
@@ -48,7 +51,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void ApplyConfig()
     {
         Topmost = _config.Topmost;
+        _locked = _config.Locked;
+        OnPropertyChanged(nameof(LockButtonText));
         _timer.Interval = TimeSpan.FromSeconds(Math.Max(3, _config.RefreshSeconds));
+    }
+
+    private void SaveConfig()
+    {
+        File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "widget.json"), JsonSerializer.Serialize(_config, JsonOptions));
     }
 
     private async Task LoadStatusAsync()
@@ -83,6 +93,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private async void Refresh(object sender, RoutedEventArgs e) => await LoadStatusAsync();
+    private void ToggleLock(object sender, RoutedEventArgs e)
+    {
+        _config.Locked = !_config.Locked;
+        _locked = _config.Locked;
+        SaveConfig();
+        OnPropertyChanged(nameof(LockButtonText));
+    }
+
     private async void OpenSettings(object sender, RoutedEventArgs e)
     {
         var window = new SettingsWindow(_config) { Owner = this };
@@ -95,7 +113,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
     private void Minimize(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
     private void Close(object sender, RoutedEventArgs e) => Close();
-    private void DragWindow(object sender, MouseButtonEventArgs e) { if (e.ButtonState == MouseButtonState.Pressed) DragMove(); }
+    private void DragWindow(object sender, MouseButtonEventArgs e)
+    {
+        if (_locked || e.ButtonState != MouseButtonState.Pressed) return;
+        DragMove();
+    }
+
+    private void ResizeWindow(object sender, DragDeltaEventArgs e)
+    {
+        Width = Math.Max(MinWidth, Width + e.HorizontalChange);
+        Height = Math.Max(MinHeight, Height + e.VerticalChange);
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }
@@ -105,6 +134,7 @@ public sealed class WidgetConfig
     public string Endpoint { get; set; } = "https://example.com";
     public int RefreshSeconds { get; set; } = 10;
     public bool Topmost { get; set; } = true;
+    public bool Locked { get; set; }
     public string[] NodeIds { get; set; } = [];
 }
 

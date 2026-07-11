@@ -31,7 +31,10 @@
               <TextBlock Text="刷新间隔（秒）" Foreground="#334155" FontWeight="SemiBold" />
               <TextBox x:Name="RefreshBox" Margin="0,6,8,0" Height="30" />
             </StackPanel>
-            <CheckBox x:Name="TopmostBox" Grid.Column="1" Content="窗口始终置顶" VerticalAlignment="Bottom" Margin="8,0,0,6" Foreground="#334155" />
+            <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Bottom">
+              <CheckBox x:Name="TopmostBox" Content="窗口始终置顶" Margin="0,0,0,8" Foreground="#334155" />
+              <CheckBox x:Name="LockedBox" Content="锁定窗口移动" Foreground="#334155" />
+            </StackPanel>
           </Grid>
         </StackPanel>
       </Border>

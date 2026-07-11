@@ -10,8 +10,10 @@
 - 支持多节点同时监控
 - 可在设置窗口中选择要展示的节点
 - 可在设置窗口中开启或关闭窗口置顶
-- 无边框透明窗口，可拖动
+- 无边框透明窗口，可拖动、可缩放
+- 支持锁定窗口位置，避免误拖动
 - 半透明卡片布局，风格接近 Komari 面板
+- 提供安装器版本，可选择安装目录并创建桌面快捷方式
 - 零第三方依赖，纯原生 WPF
 
 ## 项目结构
@@ -79,6 +81,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
   "endpoint": "https://your-komari-panel.example.com",
   "refreshSeconds": 10,
   "topmost": true,
+  "locked": false,
   "nodeIds": [
     "0625f4ce-6c6d-4373-b199-32bd9ef28a5b",
     "56969b25-8fc6-42b6-9c27-2d10abf0fcd7"
@@ -91,9 +94,10 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 | `endpoint` | string | Komari 面板地址（含 `https://`，不带尾部斜杠） |
 | `refreshSeconds` | int | 自动刷新间隔（秒），最小 3 秒 |
 | `topmost` | bool | 是否让窗口始终置顶，`true` 为置顶，`false` 为普通窗口 |
+| `locked` | bool | 是否锁定窗口移动，`true` 时无法拖动窗口 |
 | `nodeIds` | string[] | 要显示的节点 UUID 列表；留空数组 `[]` 则显示全部节点 |
 
-也可以点击窗口右上角的 `⚙` 设置按钮，在图形界面中修改置顶状态、刷新间隔，并勾选要展示的节点。
+也可以点击窗口右上角的 `⚙` 设置按钮，在图形界面中修改置顶状态、锁定状态、刷新间隔，并勾选要展示的节点。
 
 ### 如何获取节点 UUID
 
@@ -120,6 +124,8 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 ## 使用方法
 
 - **拖动窗口**：在窗口任意空白处按住鼠标左键拖动
+- **缩放窗口**：拖动右下角的斜线缩放手柄
+- **锁定窗口**：点击右上角 🔓 / 🔒 按钮，锁定后不能拖动窗口
 - **立即刷新**：点击右上角 ↻ 按钮
 - **最小化**：点击右上角 — 按钮
 - **关闭**：点击右上角 × 按钮
