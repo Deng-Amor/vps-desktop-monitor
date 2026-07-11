@@ -25,8 +25,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     public ObservableCollection<NodeSelection> Nodes { get; } = [];
     public string Footer { get => _footer; set { _footer = value; OnPropertyChanged(); } }
     public string LockButtonText => _locked ? "🔒" : "🔓";
-    public string LockButtonBackground => _locked ? "#F97316" : "Transparent";
     public string LockButtonForeground => "#FFFFFF";
+    public Visibility LockDotVisibility => _locked ? Visibility.Visible : Visibility.Collapsed;
     public string LockButtonTip => _locked ? "已锁定：不能拖动或缩放，点击解锁" : "未锁定：可以拖动和缩放，点击锁定";
     public string VersionText => $"v{UpdateService.CurrentVersion.ToString(3)}";
     public string PanelBackground => $"#{OpacityToAlpha(_config.PanelOpacity)}2B3446";
@@ -124,8 +124,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void RefreshLockState()
     {
         OnPropertyChanged(nameof(LockButtonText));
-        OnPropertyChanged(nameof(LockButtonBackground));
         OnPropertyChanged(nameof(LockButtonForeground));
+        OnPropertyChanged(nameof(LockDotVisibility));
         OnPropertyChanged(nameof(LockButtonTip));
     }
 
