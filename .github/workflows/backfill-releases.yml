@@ -94,7 +94,7 @@ jobs:
       - name: Write release notes
         shell: pwsh
         run: |
-          @"
+          @'
           ## Komari Desk Widget v1.0.1
 
           ### 新增
@@ -109,9 +109,9 @@ jobs:
 
           ### 下载
           - 下载 `KomariDeskWidget-v1.0.1-win-x64.zip` 后解压运行
-          "@ | Set-Content -Path "$env:RUNNER_TEMP\RELEASE_v1.0.1.md" -Encoding UTF8
+          '@ | Set-Content -Path "$env:RUNNER_TEMP\RELEASE_v1.0.1.md" -Encoding UTF8
 
-          @"
+          @'
           ## Komari Desk Widget v1.0.2
 
           ### 新增
@@ -128,7 +128,7 @@ jobs:
           ### 下载
           - 推荐普通用户下载 `KomariDeskWidget-v1.0.2-Setup.exe`
           - 想免安装使用的用户下载 `KomariDeskWidget-v1.0.2-win-x64.zip`
-          "@ | Set-Content -Path "$env:RUNNER_TEMP\RELEASE_v1.0.2.md" -Encoding UTF8
+          '@ | Set-Content -Path "$env:RUNNER_TEMP\RELEASE_v1.0.2.md" -Encoding UTF8
 
       - name: Create v1.0.1 release
         shell: pwsh
@@ -136,7 +136,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if (gh release view v1.0.1 *> $null) {
-            Write-Host 'v1.0.1 release already exists, skipping.'
+            gh release edit v1.0.1 --title 'v1.0.1' --notes-file "$env:RUNNER_TEMP\RELEASE_v1.0.1.md"
           } else {
             gh release create v1.0.1 `
               "$env:RUNNER_TEMP\KomariDeskWidget-v1.0.1-win-x64.zip" `
@@ -150,7 +150,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if (gh release view v1.0.2 *> $null) {
-            Write-Host 'v1.0.2 release already exists, skipping.'
+            gh release edit v1.0.2 --title 'v1.0.2' --notes-file "$env:RUNNER_TEMP\RELEASE_v1.0.2.md"
           } else {
             gh release create v1.0.2 `
               "$env:RUNNER_TEMP\KomariDeskWidget-v1.0.2-Setup.exe" `
