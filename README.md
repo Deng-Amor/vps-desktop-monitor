@@ -8,7 +8,10 @@
 - 实时显示网络上下行速率
 - 可配置自动刷新间隔（默认 10 秒）
 - 支持多节点同时监控
-- 无边框透明窗口，可拖动，默认置顶
+- 可在设置窗口中选择要展示的节点
+- 可在设置窗口中开启或关闭窗口置顶
+- 无边框透明窗口，可拖动
+- 半透明卡片布局，风格接近 Komari 面板
 - 零第三方依赖，纯原生 WPF
 
 ## 项目结构
@@ -75,6 +78,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 {
   "endpoint": "https://your-komari-panel.example.com",
   "refreshSeconds": 10,
+  "topmost": true,
   "nodeIds": [
     "0625f4ce-6c6d-4373-b199-32bd9ef28a5b",
     "56969b25-8fc6-42b6-9c27-2d10abf0fcd7"
@@ -86,7 +90,10 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 |------|------|------|
 | `endpoint` | string | Komari 面板地址（含 `https://`，不带尾部斜杠） |
 | `refreshSeconds` | int | 自动刷新间隔（秒），最小 3 秒 |
+| `topmost` | bool | 是否让窗口始终置顶，`true` 为置顶，`false` 为普通窗口 |
 | `nodeIds` | string[] | 要显示的节点 UUID 列表；留空数组 `[]` 则显示全部节点 |
+
+也可以点击窗口右上角的 `⚙` 设置按钮，在图形界面中修改置顶状态、刷新间隔，并勾选要展示的节点。
 
 ### 如何获取节点 UUID
 
@@ -116,7 +123,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - **立即刷新**：点击右上角 ↻ 按钮
 - **最小化**：点击右上角 — 按钮
 - **关闭**：点击右上角 × 按钮
-- **置顶**：窗口默认始终置顶于其他窗口之上
+- **设置**：点击右上角 ⚙ 按钮，可开关置顶、修改刷新间隔并选择展示节点
 
 ## 常见问题
 
@@ -142,7 +149,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - **依赖**：零第三方 NuGet 包
 - **API**：调用 Komari 的 `/api/nodes`（获取节点列表）和 `/api/recent/{uuid}`（获取节点最近状态）
 - **数据格式**：JSON，使用 `System.Text.Json` 解析
-- **窗口样式**：`WindowStyle="None"` + `AllowsTransparency="True"` + `Topmost="True"`
+- **窗口样式**：`WindowStyle="None"` + `AllowsTransparency="True"`，置顶状态由 `widget.json` 控制
 
 ## 从源码编译（Debug 调试）
 
