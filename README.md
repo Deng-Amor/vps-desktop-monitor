@@ -90,6 +90,8 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 }
 ```
 
+新安装时 `endpoint` 默认为空。首次运行如果还没有填写 Komari 面板地址，窗口底部会提示点击 `⚙` 进行设置。
+
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `endpoint` | string | Komari 面板地址（含 `https://`，不带尾部斜杠） |
@@ -138,6 +140,8 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 从 `v1.0.4` 开始，应用会在启动后静默检查 GitHub Releases 是否有新版本。如果发现新版本，会提示用户下载最新版安装器；确认后应用会下载 `Setup.exe` 到临时目录，启动安装器，并自动退出当前应用。
 
 安装器会默认选择当前应用所在目录，因此已安装用户可以直接覆盖更新。更新时会保留已有的 `widget.json`，不会覆盖用户的 Komari 面板地址、节点选择、置顶状态和锁定状态。
+
+从 `v1.0.5` 开始，新安装时选择安装位置后，安装器会自动在所选目录下创建 `komari-desk` 子文件夹。例如选择 `G:\Enviroment`，实际安装目录会变成 `G:\Enviroment\komari-desk`，避免程序文件散落在父目录中。
 
 ## 常见问题
 

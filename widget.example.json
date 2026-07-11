@@ -1,7 +1,7 @@
 {
-  "endpoint": "https://your-komari.example.com",
+  "endpoint": "",
   "refreshSeconds": 10,
   "topmost": true,
   "locked": false,
-  "nodeIds": ["node-uuid-1", "node-uuid-2"]
+  "nodeIds": []
 }

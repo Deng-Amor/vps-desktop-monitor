@@ -67,6 +67,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         try
         {
             var baseUrl = _config.Endpoint.TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(baseUrl) || baseUrl.Contains("your-komari", StringComparison.OrdinalIgnoreCase) || baseUrl.Contains("example.com", StringComparison.OrdinalIgnoreCase))
+            {
+                Servers.Clear();
+                Footer = "请点击 ⚙ 设置 Komari 面板地址";
+                return;
+            }
+
             var nodes = await GetAsync<List<NodeInfo>>($"{baseUrl}/api/nodes");
             var wanted = _config.NodeIds.Length == 0 ? nodes : nodes.Where(node => _config.NodeIds.Contains(node.Uuid, StringComparer.OrdinalIgnoreCase)).ToList();
             var cards = await Task.WhenAll(wanted.Select(async node =>
@@ -77,6 +84,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Servers.Clear();
             foreach (var card in cards) Servers.Add(card);
             Footer = $"更新于 {DateTime.Now:HH:mm:ss}";
+        }
+        catch (HttpRequestException)
+        {
+            Footer = "连接失败：请检查 Komari 面板地址和网络";
         }
         catch (Exception ex)
         {

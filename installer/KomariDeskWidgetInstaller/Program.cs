@@ -17,12 +17,14 @@ internal static class Program
 
 internal sealed class InstallerForm : Form
 {
+    private const string AppFolderName = "komari-desk";
     private readonly TextBox _installPathBox = new();
     private readonly CheckBox _desktopShortcutBox = new();
     private readonly CheckBox _launchAfterInstallBox = new();
     private readonly Button _installButton = new();
     private readonly ProgressBar _progress = new();
     private readonly Label _statusLabel = new();
+    private readonly bool _installPathFromArgument;
 
     public InstallerForm(string[] args)
     {
@@ -45,7 +47,7 @@ internal sealed class InstallerForm : Form
 
         var description = new Label
         {
-            Text = "请选择安装位置。安装器会复制程序文件，并可创建桌面快捷方式。",
+            Text = "请选择安装位置。安装器会在所选目录下创建 komari-desk 文件夹，并可创建桌面快捷方式。",
             AutoSize = false,
             Location = new Point(24, 54),
             Size = new Size(510, 24)
@@ -58,12 +60,14 @@ internal sealed class InstallerForm : Form
             Location = new Point(24, 96)
         };
 
+        _installPathFromArgument = TryGetInitialInstallPath(args, out var initialInstallPath);
+
         _installPathBox.Location = new Point(24, 120);
         _installPathBox.Size = new Size(405, 27);
-        _installPathBox.Text = GetInitialInstallPath(args) ?? Path.Combine(
+        _installPathBox.Text = initialInstallPath ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Programs",
-            "Komari Desk Widget");
+            AppFolderName);
 
         var browseButton = new Button
         {
@@ -121,7 +125,7 @@ internal sealed class InstallerForm : Form
 
         if (dialog.ShowDialog(this) == DialogResult.OK)
         {
-            _installPathBox.Text = dialog.SelectedPath;
+            _installPathBox.Text = EnsureAppFolder(dialog.SelectedPath);
         }
     }
 
@@ -136,6 +140,8 @@ internal sealed class InstallerForm : Form
 
         try
         {
+            installPath = _installPathFromArgument ? installPath : EnsureAppFolder(installPath);
+            _installPathBox.Text = installPath;
             SetBusy(true);
             _statusLabel.Text = "正在安装…";
             _progress.Value = 10;
@@ -204,15 +210,26 @@ internal sealed class InstallerForm : Form
         }
     }
 
-    private static string? GetInitialInstallPath(string[] args)
+    private static bool TryGetInitialInstallPath(string[] args, out string? installPath)
     {
         for (var i = 0; i < args.Length; i++)
         {
             if (!args[i].Equals("--installPath", StringComparison.OrdinalIgnoreCase) || i + 1 >= args.Length) continue;
-            return args[i + 1].Trim('"');
+            installPath = args[i + 1].Trim('"');
+            return true;
         }
 
-        return null;
+        installPath = null;
+        return false;
+    }
+
+    private static string EnsureAppFolder(string selectedPath)
+    {
+        var normalized = Path.GetFullPath(selectedPath.Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        var folderName = Path.GetFileName(normalized);
+        return folderName.Equals(AppFolderName, StringComparison.OrdinalIgnoreCase)
+            ? normalized
+            : Path.Combine(normalized, AppFolderName);
     }
 
     private static void CloseRunningApp(string installPath)
