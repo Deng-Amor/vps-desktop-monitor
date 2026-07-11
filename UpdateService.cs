@@ -50,10 +50,11 @@ public sealed class UpdateService
             if (result != MessageBoxResult.Yes) return;
 
             var installerPath = await DownloadInstallerAsync(setupAsset);
+            var installPath = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
             Process.Start(new ProcessStartInfo
             {
                 FileName = installerPath,
-                Arguments = $"--installPath \"{AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar)}\"",
+                Arguments = $"--silent --launch --installPath \"{installPath}\"",
                 UseShellExecute = true
             });
 

@@ -12,7 +12,9 @@ internal static class Program
     private static void Main()
     {
         ApplicationConfiguration.Initialize();
-        Application.Run(new InstallerForm(Environment.GetCommandLineArgs()));
+        var args = Environment.GetCommandLineArgs();
+        if (InstallerForm.TryRunSilent(args)) return;
+        Application.Run(new InstallerForm(args));
     }
 }
 
@@ -31,6 +33,28 @@ internal sealed class InstallerForm : Form
     private readonly Label _descriptionLabel = new();
     private readonly bool _installPathFromArgument;
     private bool _useExactInstallPath;
+
+    public static bool TryRunSilent(string[] args)
+    {
+        if (!args.Any(arg => arg.Equals("--silent", StringComparison.OrdinalIgnoreCase))) return false;
+
+        try
+        {
+            TryGetInitialInstallPath(args, out var installPath);
+            var launchAfterInstall = args.Any(arg => arg.Equals("--launch", StringComparison.OrdinalIgnoreCase));
+            var createShortcut = !args.Any(arg => arg.Equals("--noShortcut", StringComparison.OrdinalIgnoreCase));
+            installPath = string.IsNullOrWhiteSpace(installPath)
+                ? FindInstallPathOrDefault()
+                : Path.GetFullPath(installPath);
+            InstallTo(installPath, createShortcut, launchAfterInstall);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"自动更新失败：{ex.Message}", "Komari Desk Widget", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        return true;
+    }
 
     public InstallerForm(string[] args)
     {
@@ -186,31 +210,14 @@ internal sealed class InstallerForm : Form
             _statusLabel.Text = "正在安装…";
             _progress.Value = 10;
 
-            Directory.CreateDirectory(installPath);
-            CloseRunningApp(installPath);
-            ExtractPayload(installPath);
+            InstallTo(installPath, _desktopShortcutBox.Checked, _launchAfterInstallBox.Checked);
             _progress.Value = 75;
 
             var exePath = Path.Combine(installPath, "KomariDeskWidget.exe");
-            if (_desktopShortcutBox.Checked)
-            {
-                CreateDesktopShortcut(exePath);
-            }
-            SaveInstallPath(installPath);
             _progress.Value = 92;
 
             _statusLabel.Text = "安装完成。";
             _progress.Value = 100;
-
-            if (_launchAfterInstallBox.Checked)
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = exePath,
-                    WorkingDirectory = installPath,
-                    UseShellExecute = true
-                });
-            }
 
             MessageBox.Show(this, "安装完成。", "Komari Desk Widget", MessageBoxButtons.OK, MessageBoxIcon.Information);
             Close();
@@ -220,6 +227,30 @@ internal sealed class InstallerForm : Form
             _statusLabel.Text = "安装失败。";
             MessageBox.Show(this, $"安装失败：{ex.Message}", "安装器", MessageBoxButtons.OK, MessageBoxIcon.Error);
             SetBusy(false);
+        }
+    }
+
+    private static void InstallTo(string installPath, bool createShortcut, bool launchAfterInstall)
+    {
+        Directory.CreateDirectory(installPath);
+        CloseRunningApp(installPath);
+        ExtractPayload(installPath);
+
+        var exePath = Path.Combine(installPath, "KomariDeskWidget.exe");
+        if (createShortcut)
+        {
+            CreateDesktopShortcut(exePath);
+        }
+
+        SaveInstallPath(installPath);
+        if (launchAfterInstall)
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = exePath,
+                WorkingDirectory = installPath,
+                UseShellExecute = true
+            });
         }
     }
 
@@ -307,6 +338,13 @@ internal sealed class InstallerForm : Form
 
         installPath = "";
         return false;
+    }
+
+    private static string FindInstallPathOrDefault()
+    {
+        return TryFindExistingInstall(out var installPath)
+            ? installPath
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", AppFolderName);
     }
 
     private static bool TryGetRegistryInstallPath(out string installPath)

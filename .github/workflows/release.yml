@@ -92,7 +92,8 @@ jobs:
           - 可创建桌面快捷方式
           - 默认安装到当前用户目录，不需要管理员权限
           - 如果目标目录已有 `widget.json`，安装器会保留原配置
-          - 应用内可通过右上角 `⇧` 或设置窗口检查在线更新
+          - 应用内可通过左下角“检查更新”检查在线更新
+          - 应用内确认更新后会静默覆盖安装并重新启动应用
           '@ | Set-Content -Path RELEASE_NOTES.md -Encoding UTF8
 
       - name: Create GitHub release

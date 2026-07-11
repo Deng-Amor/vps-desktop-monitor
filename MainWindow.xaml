@@ -169,11 +169,11 @@
           <Button Content="检查更新" Foreground="#EEF5FF" Background="Transparent" BorderBrush="Transparent" FontSize="10" Padding="0" Click="CheckUpdates" />
         </StackPanel>
         <TextBlock Text="{Binding Footer}" Foreground="#B9C6D8" FontSize="10" HorizontalAlignment="Right" Margin="0,0,16,0" />
-        <primitives:Thumb Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Bottom" DragDelta="ResizeWindow" Cursor="SizeNWSE" Opacity="0.65">
+        <primitives:Thumb Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Bottom" DragDelta="ResizeWindow" Cursor="SizeNWSE" Opacity="0.7" Margin="0,0,-6,-6">
           <primitives:Thumb.Template>
             <ControlTemplate TargetType="{x:Type primitives:Thumb}">
-              <Grid>
-                <Path Stroke="#B9C6D8" StrokeThickness="1.4" Data="M 4 14 L 14 4 M 8 14 L 14 8 M 12 14 L 14 12" />
+              <Grid Background="Transparent">
+                <Path Stroke="#B9C6D8" StrokeThickness="1.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,6,6" Data="M 4 14 L 14 4 M 8 14 L 14 8 M 12 14 L 14 12" />
               </Grid>
             </ControlTemplate>
           </primitives:Thumb.Template>

@@ -223,6 +223,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void ResizeWindow(object sender, DragDeltaEventArgs e)
     {
+        if (_locked) return;
         Width = Math.Max(MinWidth, Width + e.HorizontalChange);
         Height = Math.Max(MinHeight, Height + e.VerticalChange);
     }
