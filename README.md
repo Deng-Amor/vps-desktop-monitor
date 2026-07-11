@@ -14,6 +14,7 @@
 - 支持锁定窗口位置，避免误拖动
 - 半透明卡片布局，风格接近 Komari 面板
 - 提供安装器版本，可选择安装目录并创建桌面快捷方式
+- 支持应用内在线检查更新，下载并启动最新版安装器
 - 零第三方依赖，纯原生 WPF
 
 ## 项目结构
@@ -130,6 +131,13 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - **最小化**：点击右上角 — 按钮
 - **关闭**：点击右上角 × 按钮
 - **设置**：点击右上角 ⚙ 按钮，可开关置顶、修改刷新间隔并选择展示节点
+- **检查更新**：点击右上角 ⇧ 按钮，或在设置窗口中点击“检查更新”
+
+## 在线更新
+
+从 `v1.0.4` 开始，应用会在启动后静默检查 GitHub Releases 是否有新版本。如果发现新版本，会提示用户下载最新版安装器；确认后应用会下载 `Setup.exe` 到临时目录，启动安装器，并自动退出当前应用。
+
+安装器会默认选择当前应用所在目录，因此已安装用户可以直接覆盖更新。更新时会保留已有的 `widget.json`，不会覆盖用户的 Komari 面板地址、节点选择、置顶状态和锁定状态。
 
 ## 常见问题
 
@@ -154,6 +162,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - **框架**：.NET 8 + WPF
 - **依赖**：零第三方 NuGet 包
 - **API**：调用 Komari 的 `/api/nodes`（获取节点列表）和 `/api/recent/{uuid}`（获取节点最近状态）
+- **更新源**：调用 GitHub Releases latest API 检查最新版，并下载 `*-Setup.exe`
 - **数据格式**：JSON，使用 `System.Text.Json` 解析
 - **窗口样式**：`WindowStyle="None"` + `AllowsTransparency="True"`，置顶状态由 `widget.json` 控制
 

@@ -11,7 +11,7 @@ internal static class Program
     private static void Main()
     {
         ApplicationConfiguration.Initialize();
-        Application.Run(new InstallerForm());
+        Application.Run(new InstallerForm(Environment.GetCommandLineArgs()));
     }
 }
 
@@ -24,7 +24,7 @@ internal sealed class InstallerForm : Form
     private readonly ProgressBar _progress = new();
     private readonly Label _statusLabel = new();
 
-    public InstallerForm()
+    public InstallerForm(string[] args)
     {
         Text = "Komari Desk Widget 安装器";
         StartPosition = FormStartPosition.CenterScreen;
@@ -60,7 +60,7 @@ internal sealed class InstallerForm : Form
 
         _installPathBox.Location = new Point(24, 120);
         _installPathBox.Size = new Size(405, 27);
-        _installPathBox.Text = Path.Combine(
+        _installPathBox.Text = GetInitialInstallPath(args) ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Programs",
             "Komari Desk Widget");
@@ -141,6 +141,7 @@ internal sealed class InstallerForm : Form
             _progress.Value = 10;
 
             Directory.CreateDirectory(installPath);
+            CloseRunningApp(installPath);
             ExtractPayload(installPath);
             _progress.Value = 75;
 
@@ -200,6 +201,40 @@ internal sealed class InstallerForm : Form
             }
 
             entry.ExtractToFile(targetPath, overwrite: true);
+        }
+    }
+
+    private static string? GetInitialInstallPath(string[] args)
+    {
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (!args[i].Equals("--installPath", StringComparison.OrdinalIgnoreCase) || i + 1 >= args.Length) continue;
+            return args[i + 1].Trim('"');
+        }
+
+        return null;
+    }
+
+    private static void CloseRunningApp(string installPath)
+    {
+        var targetExe = Path.GetFullPath(Path.Combine(installPath, "KomariDeskWidget.exe"));
+        foreach (var process in Process.GetProcessesByName("KomariDeskWidget"))
+        {
+            try
+            {
+                var processPath = process.MainModule?.FileName;
+                if (!string.Equals(processPath, targetExe, StringComparison.OrdinalIgnoreCase)) continue;
+                process.CloseMainWindow();
+                if (!process.WaitForExit(5000))
+                {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit(5000);
+                }
+            }
+            catch
+            {
+                // 忽略无法访问的进程，后续覆盖文件失败时会提示用户。
+            }
         }
     }
 

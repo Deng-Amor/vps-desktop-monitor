@@ -74,6 +74,7 @@
       </Border>
 
       <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+        <Button Content="检查更新" Width="92" Height="32" Margin="0,0,10,0" Click="CheckUpdates" />
         <Button Content="取消" Width="82" Height="32" Margin="0,0,10,0" Click="Cancel" />
         <Button Content="保存" Width="92" Height="32" Background="#2563EB" Foreground="White" Click="Save" />
       </StackPanel>

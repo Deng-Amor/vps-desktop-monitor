@@ -36,6 +36,7 @@ public partial class SettingsWindow : Window
     }
 
     private async void RefreshNodes(object sender, RoutedEventArgs e) => await LoadNodesAsync();
+    private async void CheckUpdates(object sender, RoutedEventArgs e) => await UpdateService.CheckForUpdatesAsync(this, silentWhenLatest: false);
 
     private async Task LoadNodesAsync()
     {

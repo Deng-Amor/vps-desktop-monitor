@@ -37,6 +37,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _timer.Tick += async (_, _) => await LoadStatusAsync();
             _timer.Start();
             await LoadStatusAsync();
+            await UpdateService.CheckForUpdatesAsync(this, silentWhenLatest: true);
         };
     }
 
@@ -93,6 +94,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private async void Refresh(object sender, RoutedEventArgs e) => await LoadStatusAsync();
+    private async void CheckUpdates(object sender, RoutedEventArgs e) => await UpdateService.CheckForUpdatesAsync(this, silentWhenLatest: false);
     private void ToggleLock(object sender, RoutedEventArgs e)
     {
         _config.Locked = !_config.Locked;

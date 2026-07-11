@@ -39,7 +39,10 @@ jobs:
             --self-contained true `
             -p:PublishSingleFile=true `
             -p:EnableCompressionInSingleFile=true `
-            -p:IncludeNativeLibrariesForSelfExtract=true
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:Version=${{ steps.version.outputs.version }} `
+            -p:AssemblyVersion=${{ steps.version.outputs.version }}.0 `
+            -p:FileVersion=${{ steps.version.outputs.version }}.0
 
       - name: Create portable package
         shell: pwsh
@@ -76,7 +79,7 @@ jobs:
       - name: Write release notes
         shell: pwsh
         run: |
-          @"
+          @'
           ## Komari Desk Widget ${{ steps.version.outputs.tag }}
 
           ### 下载
@@ -88,7 +91,8 @@ jobs:
           - 可创建桌面快捷方式
           - 默认安装到当前用户目录，不需要管理员权限
           - 如果目标目录已有 `widget.json`，安装器会保留原配置
-          "@ | Set-Content -Path RELEASE_NOTES.md -Encoding UTF8
+          - 应用内可通过右上角 `⇧` 或设置窗口检查在线更新
+          '@ | Set-Content -Path RELEASE_NOTES.md -Encoding UTF8
 
       - name: Create GitHub release
         shell: pwsh
