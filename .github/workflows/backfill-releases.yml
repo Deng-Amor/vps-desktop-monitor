@@ -1,5 +1,7 @@
 name: Backfill historical releases
 
+# This workflow is used once to create missing GitHub Releases for old tags.
+
 on:
   push:
     branches:
