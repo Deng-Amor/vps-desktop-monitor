@@ -22,8 +22,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _locked;
 
     public ObservableCollection<ServerCard> Servers { get; } = [];
+    public ObservableCollection<NodeSelection> Nodes { get; } = [];
     public string Footer { get => _footer; set { _footer = value; OnPropertyChanged(); } }
     public string LockButtonText => _locked ? "🔒" : "🔓";
+    public string VersionText => $"v{UpdateService.CurrentVersion.ToString(3)}";
 
     public MainWindow()
     {
@@ -116,14 +118,101 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OpenSettings(object sender, RoutedEventArgs e)
     {
-        var window = new SettingsWindow(_config) { Owner = this };
-        if (window.ShowDialog() == true)
+        EndpointBox.Text = _config.Endpoint;
+        RefreshBox.Text = _config.RefreshSeconds.ToString();
+        TopmostBox.IsChecked = _config.Topmost;
+        LockedBox.IsChecked = _config.Locked;
+        DashboardPanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Visible;
+        Footer = "设置";
+        await LoadNodesForSettingsAsync();
+    }
+
+    private async void RefreshNodes(object sender, RoutedEventArgs e) => await LoadNodesForSettingsAsync();
+
+    private async Task LoadNodesForSettingsAsync()
+    {
+        try
         {
-            _config = LoadConfig();
-            ApplyConfig();
-            await LoadStatusAsync();
+            SettingsStatusText.Text = "正在读取节点…";
+            var endpoint = EndpointBox.Text.Trim().TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(endpoint))
+            {
+                Nodes.Clear();
+                SettingsStatusText.Text = "请先填写 Komari 面板地址。";
+                return;
+            }
+
+            var nodes = await GetAsync<List<NodeInfo>>($"{endpoint}/api/nodes");
+            var selected = _config.NodeIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var allSelected = selected.Count == 0;
+            Nodes.Clear();
+            foreach (var node in nodes.OrderBy(node => node.Name))
+            {
+                Nodes.Add(new NodeSelection
+                {
+                    Uuid = node.Uuid,
+                    Name = $"{node.Name} ({node.Uuid})",
+                    IsSelected = allSelected || selected.Contains(node.Uuid)
+                });
+            }
+
+            SettingsStatusText.Text = Nodes.Count == 0 ? "没有读取到节点。" : $"已读取 {Nodes.Count} 个节点。";
+        }
+        catch (Exception)
+        {
+            SettingsStatusText.Text = "读取失败：请检查面板地址和网络。";
         }
     }
+
+    private void SelectAllNodes(object sender, RoutedEventArgs e)
+    {
+        foreach (var node in Nodes) node.IsSelected = true;
+    }
+
+    private void SelectNoNodes(object sender, RoutedEventArgs e)
+    {
+        foreach (var node in Nodes) node.IsSelected = false;
+    }
+
+    private async void SaveInlineSettings(object sender, RoutedEventArgs e)
+    {
+        if (!int.TryParse(RefreshBox.Text.Trim(), out var refreshSeconds))
+        {
+            SettingsStatusText.Text = "刷新间隔必须是数字。";
+            return;
+        }
+
+        var selectedIds = Nodes.Where(node => node.IsSelected).Select(node => node.Uuid).ToArray();
+        if (Nodes.Count > 0 && selectedIds.Length == 0)
+        {
+            SettingsStatusText.Text = "请至少选择一个节点；想显示全部请点全选。";
+            return;
+        }
+
+        _config = new WidgetConfig
+        {
+            Endpoint = EndpointBox.Text.Trim().TrimEnd('/'),
+            RefreshSeconds = Math.Max(3, refreshSeconds),
+            Topmost = TopmostBox.IsChecked == true,
+            Locked = LockedBox.IsChecked == true,
+            NodeIds = selectedIds.Length == Nodes.Count ? [] : selectedIds
+        };
+        SaveConfig();
+        ApplyConfig();
+        CloseSettingsView();
+        await LoadStatusAsync();
+    }
+
+    private void CloseSettings(object sender, RoutedEventArgs e) => CloseSettingsView();
+
+    private void CloseSettingsView()
+    {
+        SettingsPanel.Visibility = Visibility.Collapsed;
+        DashboardPanel.Visibility = Visibility.Visible;
+        Footer = "返回主界面";
+    }
+
     private void Minimize(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
     private void Close(object sender, RoutedEventArgs e) => Close();
     private void DragWindow(object sender, MouseButtonEventArgs e)
@@ -144,7 +233,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
 public sealed class WidgetConfig
 {
-    public string Endpoint { get; set; } = "https://example.com";
+    public string Endpoint { get; set; } = "";
     public int RefreshSeconds { get; set; } = 10;
     public bool Topmost { get; set; } = true;
     public bool Locked { get; set; }
