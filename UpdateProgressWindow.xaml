@@ -1,0 +1,24 @@
+<Window x:Class="KomariDeskWidget.UpdateProgressWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="正在更新" Width="360" Height="150" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False">
+  <Border Background="#F02B3446" BorderBrush="#7B9AB1CC" BorderThickness="1" CornerRadius="16" Padding="16">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <DockPanel>
+        <TextBlock Text="Komari 正在更新" Foreground="#F8FBFF" FontWeight="Bold" FontSize="15" />
+        <TextBlock x:Name="PercentText" Text="0%" Foreground="#B9C6D8" FontSize="12" DockPanel.Dock="Right" />
+      </DockPanel>
+      <TextBlock x:Name="StatusText" Grid.Row="1" Text="准备下载更新…" Foreground="#B9C6D8" FontSize="12" Margin="0,8,0,10" />
+      <ProgressBar x:Name="DownloadProgress" Grid.Row="2" Minimum="0" Maximum="100" Height="8" Value="0" />
+      <TextBlock x:Name="DetailText" Grid.Row="3" Text="请稍等，下载完成后会自动安装并重启。" Foreground="#8EA2BA" FontSize="11" Margin="0,10,0,0" />
+    </Grid>
+  </Border>
+</Window>

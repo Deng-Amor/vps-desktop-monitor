@@ -96,6 +96,7 @@ jobs:
           - 应用内确认更新后会静默覆盖安装并重新启动应用
           - 使用自定义圆形应用图标，锁定时在锁图标右上角显示 4px 状态圆点
           - 设置页支持调节面板背景透明度
+          - 应用内更新时显示下载进度和安装提示
           '@ | Set-Content -Path RELEASE_NOTES.md -Encoding UTF8
 
       - name: Create GitHub release

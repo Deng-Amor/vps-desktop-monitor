@@ -19,6 +19,7 @@ public sealed class UpdateService
 
     public static async Task CheckForUpdatesAsync(Window owner, bool silentWhenLatest)
     {
+        UpdateProgressWindow? progressWindow = null;
         try
         {
             var release = await GetLatestReleaseAsync();
@@ -42,14 +43,20 @@ public sealed class UpdateService
 
             var result = MessageBox.Show(
                 owner,
-                $"发现新版本 {release.TagName}。\n\n当前版本：v{CurrentVersion.ToString(3)}\n是否现在下载并启动安装器？\n\n应用会在启动安装器后自动退出，安装器会保留你的 widget.json 配置。",
+                $"发现新版本 {release.TagName}。\n\n当前版本：v{CurrentVersion.ToString(3)}\n是否现在下载并安装？\n\n下载过程中会显示进度，安装完成后应用会自动重启，并保留你的 widget.json 配置。",
                 "发现新版本",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Information);
 
             if (result != MessageBoxResult.Yes) return;
 
-            var installerPath = await DownloadInstallerAsync(setupAsset);
+            progressWindow = new UpdateProgressWindow { Owner = owner };
+            progressWindow.SetPreparing();
+            progressWindow.Show();
+            var progress = new Progress<DownloadProgress>(state => progressWindow.ReportDownload(state.DownloadedBytes, state.TotalBytes));
+            var installerPath = await DownloadInstallerAsync(setupAsset, progress);
+            progressWindow.SetInstalling();
+            await Task.Delay(900);
             var installPath = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
             Process.Start(new ProcessStartInfo
             {
@@ -62,6 +69,7 @@ public sealed class UpdateService
         }
         catch (Exception ex)
         {
+            progressWindow?.Close();
             if (!silentWhenLatest)
             {
                 MessageBox.Show(owner, $"检查更新失败：{ex.Message}", "检查更新", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -77,17 +85,26 @@ public sealed class UpdateService
                ?? throw new InvalidDataException("GitHub 返回了空数据。");
     }
 
-    private static async Task<string> DownloadInstallerAsync(GitHubAsset asset)
+    private static async Task<string> DownloadInstallerAsync(GitHubAsset asset, IProgress<DownloadProgress>? progress)
     {
         var updateDir = Path.Combine(Path.GetTempPath(), "KomariDeskWidget", "updates");
         Directory.CreateDirectory(updateDir);
         var targetPath = Path.Combine(updateDir, asset.Name);
 
-        using var response = await Http.GetAsync(asset.BrowserDownloadUrl);
+        using var response = await Http.GetAsync(asset.BrowserDownloadUrl, HttpCompletionOption.ResponseHeadersRead);
         response.EnsureSuccessStatusCode();
+        var totalBytes = response.Content.Headers.ContentLength;
         await using var input = await response.Content.ReadAsStreamAsync();
         await using var output = File.Create(targetPath);
-        await input.CopyToAsync(output);
+        var buffer = new byte[81920];
+        long downloadedBytes = 0;
+        int read;
+        while ((read = await input.ReadAsync(buffer)) > 0)
+        {
+            await output.WriteAsync(buffer.AsMemory(0, read));
+            downloadedBytes += read;
+            progress?.Report(new DownloadProgress(downloadedBytes, totalBytes));
+        }
 
         return targetPath;
     }
@@ -126,3 +143,5 @@ public sealed class GitHubAsset
     [JsonPropertyName("browser_download_url")]
     public string BrowserDownloadUrl { get; set; } = "";
 }
+
+public sealed record DownloadProgress(long DownloadedBytes, long? TotalBytes);
