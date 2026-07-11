@@ -4,7 +4,7 @@
         xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
         Title="Komari Desk Widget" Width="390" Height="540" MinWidth="390" MinHeight="370"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent" ResizeMode="CanResize"
-        MouseLeftButtonDown="DragWindow">
+        Icon="assets/app.ico" MouseLeftButtonDown="DragWindow">
   <Window.Resources>
     <Style x:Key="TinyButton" TargetType="Button">
       <Setter Property="Foreground" Value="#EEF5FF" />
@@ -37,7 +37,7 @@
         <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
           <Button Style="{StaticResource TinyButton}" Content="↻" Click="Refresh" ToolTip="立即刷新" />
           <Button Style="{StaticResource TinyButton}" Content="⚙" Click="OpenSettings" ToolTip="设置" />
-          <Button Style="{StaticResource TinyButton}" Content="{Binding LockButtonText}" Click="ToggleLock" ToolTip="锁定/解锁窗口移动" />
+          <Button Style="{StaticResource TinyButton}" Content="{Binding LockButtonText}" Background="{Binding LockButtonBackground}" Foreground="{Binding LockButtonForeground}" Width="34" FontWeight="Bold" Click="ToggleLock" ToolTip="{Binding LockButtonTip}" />
           <Button Style="{StaticResource TinyButton}" Content="—" Click="Minimize" ToolTip="最小化" />
           <Button Style="{StaticResource TinyButton}" Content="×" Click="Close" ToolTip="关闭" />
         </StackPanel>

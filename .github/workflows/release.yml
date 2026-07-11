@@ -94,6 +94,7 @@ jobs:
           - 如果目标目录已有 `widget.json`，安装器会保留原配置
           - 应用内可通过左下角“检查更新”检查在线更新
           - 应用内确认更新后会静默覆盖安装并重新启动应用
+          - 使用自定义圆形应用图标，并优化锁定按钮状态颜色
           '@ | Set-Content -Path RELEASE_NOTES.md -Encoding UTF8
 
       - name: Create GitHub release
