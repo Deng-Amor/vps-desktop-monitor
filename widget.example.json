@@ -1,0 +1,5 @@
+{
+  "endpoint": "https://your-komari.example.com",
+  "refreshSeconds": 10,
+  "nodeIds": ["node-uuid-1", "node-uuid-2"]
+}
