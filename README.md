@@ -18,6 +18,7 @@
 - 提供安装器版本，可选择安装目录并创建桌面快捷方式
 - 支持应用内在线检查更新，下载并启动最新版安装器
 - 使用自定义圆形应用图标，桌面快捷方式不再显示默认白纸图标
+- 支持在主界面切换查看 Codex 额度状态、5 小时重置时间、周额度和重置券数量
 - 零第三方依赖，纯原生 WPF
 
 ## 项目结构
@@ -139,6 +140,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - **最小化**：点击右上角 — 按钮
 - **关闭**：点击右上角 × 按钮
 - **设置**：点击右上角 ⚙ 按钮，在主界面内进入设置页
+- **Codex 状态**：点击标题下方的 `Codex` 标签，可查看本机 Codex 额度状态；需要先完成 Codex 登录
 - **检查更新**：点击左下角的“检查更新”
 
 ## 在线更新
@@ -163,6 +165,8 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 从 `v1.0.14` 开始，应用内更新会显示下载进度窗口。用户确认更新后会看到下载百分比和已下载大小，下载完成后显示“正在安装并重启”，避免应用突然关闭造成突兀感。
 
+从 `v1.0.15` 开始，主界面新增 `VPS / Codex` 切换。Codex 页会读取本机 Codex 登录状态，显示 5 小时额度剩余、重置时间、周额度和重置券数量。
+
 ## 常见问题
 
 ### 双击 exe 没有反应
@@ -186,6 +190,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - **框架**：.NET 8 + WPF
 - **依赖**：零第三方 NuGet 包
 - **API**：调用 Komari 的 `/api/nodes`（获取节点列表）和 `/api/recent/{uuid}`（获取节点最近状态）
+- **Codex 状态**：读取本机 Codex 登录文件并请求 Codex/ChatGPT 额度接口，仅用于展示额度状态
 - **更新源**：调用 GitHub Releases latest API 检查最新版，并下载 `*-Setup.exe`
 - **数据格式**：JSON，使用 `System.Text.Json` 解析
 - **窗口样式**：`WindowStyle="None"` + `AllowsTransparency="True"`，置顶状态由 `widget.json` 控制

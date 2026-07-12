@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -19,17 +20,28 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _timer = new();
     private WidgetConfig _config = new();
     private string _footer = "正在连接…";
+    private CodexQuotaSnapshot _codexQuota = CodexQuotaSnapshot.Loading();
     private bool _locked;
+    private bool _showCodexPanel;
+    private bool _codexLoaded;
+    private bool _codexLoading;
 
     public ObservableCollection<ServerCard> Servers { get; } = [];
     public ObservableCollection<NodeSelection> Nodes { get; } = [];
     public string Footer { get => _footer; set { _footer = value; OnPropertyChanged(); } }
+    public CodexQuotaSnapshot CodexQuota { get => _codexQuota; set { _codexQuota = value; OnPropertyChanged(); } }
     public string LockButtonText => _locked ? "🔒" : "🔓";
     public string LockButtonForeground => "#FFFFFF";
     public Visibility LockDotVisibility => _locked ? Visibility.Visible : Visibility.Collapsed;
     public string LockButtonTip => _locked ? "已锁定：不能拖动或缩放，点击解锁" : "未锁定：可以拖动和缩放，点击锁定";
     public string VersionText => $"v{UpdateService.CurrentVersion.ToString(3)}";
     public string PanelBackground => $"#{OpacityToAlpha(_config.PanelOpacity)}2B3446";
+    public Visibility VpsPanelVisibility => !_showCodexPanel ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility CodexPanelVisibility => _showCodexPanel ? Visibility.Visible : Visibility.Collapsed;
+    public string VpsTabBackground => !_showCodexPanel ? "#F8FAFC" : "#22FFFFFF";
+    public string VpsTabForeground => !_showCodexPanel ? "#111827" : "#DDE8F7";
+    public string CodexTabBackground => _showCodexPanel ? "#F8FAFC" : "#22FFFFFF";
+    public string CodexTabForeground => _showCodexPanel ? "#111827" : "#DDE8F7";
 
     public MainWindow()
     {
@@ -40,7 +52,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _config = LoadConfig();
             ApplyConfig();
             _timer.Interval = TimeSpan.FromSeconds(Math.Max(3, _config.RefreshSeconds));
-            _timer.Tick += async (_, _) => await LoadStatusAsync();
+            _timer.Tick += async (_, _) =>
+            {
+                if (_showCodexPanel) await LoadCodexStatusAsync();
+                else await LoadStatusAsync();
+            };
             _timer.Start();
             await LoadStatusAsync();
             await UpdateService.CheckForUpdatesAsync(this, silentWhenLatest: true);
@@ -102,6 +118,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private async Task LoadCodexStatusAsync(bool force = false)
+    {
+        if (_codexLoading) return;
+        if (_codexLoaded && !force && CodexQuota.Status == "ok") return;
+
+        _codexLoading = true;
+        try
+        {
+            CodexQuota = CodexQuotaSnapshot.Loading();
+            Footer = "正在读取 Codex…";
+            CodexQuota = await CodexQuotaService.ReadAsync();
+            _codexLoaded = true;
+            Footer = CodexQuota.IsOk ? $"Codex {CodexQuota.UpdatedText}" : "Codex 读取失败";
+        }
+        finally
+        {
+            _codexLoading = false;
+        }
+    }
+
     private async Task<T> GetAsync<T>(string url) where T : class
     {
         using var response = await Http.GetAsync(url);
@@ -111,8 +147,36 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return envelope.Data;
     }
 
-    private async void Refresh(object sender, RoutedEventArgs e) => await LoadStatusAsync();
+    private async void Refresh(object sender, RoutedEventArgs e)
+    {
+        if (_showCodexPanel) await LoadCodexStatusAsync(force: true);
+        else await LoadStatusAsync();
+    }
     private async void CheckUpdates(object sender, RoutedEventArgs e) => await UpdateService.CheckForUpdatesAsync(this, silentWhenLatest: false);
+    private async void ShowVpsPanel(object sender, RoutedEventArgs e)
+    {
+        _showCodexPanel = false;
+        RefreshPanelTabs();
+        Footer = "VPS 状态";
+        await LoadStatusAsync();
+    }
+
+    private async void ShowCodexPanel(object sender, RoutedEventArgs e)
+    {
+        _showCodexPanel = true;
+        RefreshPanelTabs();
+        await LoadCodexStatusAsync(force: !_codexLoaded);
+    }
+
+    private void RefreshPanelTabs()
+    {
+        OnPropertyChanged(nameof(VpsPanelVisibility));
+        OnPropertyChanged(nameof(CodexPanelVisibility));
+        OnPropertyChanged(nameof(VpsTabBackground));
+        OnPropertyChanged(nameof(VpsTabForeground));
+        OnPropertyChanged(nameof(CodexTabBackground));
+        OnPropertyChanged(nameof(CodexTabForeground));
+    }
     private void ToggleLock(object sender, RoutedEventArgs e)
     {
         _config.Locked = !_config.Locked;
@@ -137,7 +201,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         LockedBox.IsChecked = _config.Locked;
         PanelOpacitySlider.Value = Math.Clamp(_config.PanelOpacity, 30, 100);
         UpdatePanelOpacityText();
-        DashboardPanel.Visibility = Visibility.Collapsed;
+        DashboardPanelHost.Visibility = Visibility.Collapsed;
         SettingsPanel.Visibility = Visibility.Visible;
         Footer = "设置";
         await LoadNodesForSettingsAsync();
@@ -238,7 +302,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void CloseSettingsView()
     {
         SettingsPanel.Visibility = Visibility.Collapsed;
-        DashboardPanel.Visibility = Visibility.Visible;
+        DashboardPanelHost.Visibility = Visibility.Visible;
         Footer = "返回主界面";
     }
 
