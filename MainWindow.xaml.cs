@@ -10,6 +10,9 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Forms = System.Windows.Forms;
+using Drawing = System.Drawing;
+using Media = System.Windows.Media;
 
 namespace KomariDeskWidget;
 
@@ -25,11 +28,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _showCodexPanel;
     private bool _codexLoaded;
     private bool _codexLoading;
+    private bool _allowExit;
+    private double _normalWidth;
+    private double _normalHeight;
+    private double _normalMinHeight;
+    private Forms.NotifyIcon? _trayIcon;
+    private bool _compactCodex;
+
+    public string CompactCodexText => $"5 小时额度 {CodexQuota.PrimaryPercentText}\n周额度 {CodexQuota.SecondaryPercentText}";
+    public Visibility CompactVpsVisibility => _compactCodex ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility CompactCodexVisibility => _compactCodex ? Visibility.Visible : Visibility.Collapsed;
 
     public ObservableCollection<ServerCard> Servers { get; } = [];
     public ObservableCollection<NodeSelection> Nodes { get; } = [];
     public string Footer { get => _footer; set { _footer = value; OnPropertyChanged(); } }
-    public CodexQuotaSnapshot CodexQuota { get => _codexQuota; set { _codexQuota = value; OnPropertyChanged(); } }
+    public CodexQuotaSnapshot CodexQuota { get => _codexQuota; set { _codexQuota = value; OnPropertyChanged(); OnPropertyChanged(nameof(CompactCodexText)); } }
     public string LockButtonText => _locked ? "🔒" : "🔓";
     public string LockButtonForeground => "#FFFFFF";
     public Visibility LockDotVisibility => _locked ? Visibility.Visible : Visibility.Collapsed;
@@ -50,8 +63,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         InitializeComponent();
         DataContext = this;
+        Closing += (_, e) =>
+        {
+            if (_allowExit) return;
+            e.Cancel = true;
+            RequestClose();
+        };
         Loaded += async (_, _) =>
         {
+            _normalWidth = Width;
+            _normalHeight = Height;
+            _normalMinHeight = MinHeight;
+            SetupTrayIcon();
             _config = LoadConfig();
             ApplyConfig();
             RestoreWindowPosition();
@@ -340,7 +363,83 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private void Minimize(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-    private void Close(object sender, RoutedEventArgs e) => Close();
+    private void Close(object sender, RoutedEventArgs e) => RequestClose();
+    private void RequestClose()
+    {
+        var result = new CloseChoiceWindow { Owner = this }.ShowDialog();
+        if (result == true)
+        {
+            _allowExit = true;
+            _trayIcon?.Dispose();
+            Close();
+        }
+        else if (result == false) EnterCompactMode();
+    }
+
+    private void EnterCompactMode()
+    {
+        _compactCodex = _showCodexPanel;
+        _normalWidth = Width;
+        _normalHeight = Height;
+        FullLayoutVisibility(false);
+        CompactPanel.Visibility = Visibility.Visible;
+        CompactVpsList.Visibility = _compactCodex ? Visibility.Collapsed : Visibility.Visible;
+        CompactCodexSummary.Visibility = _compactCodex ? Visibility.Visible : Visibility.Collapsed;
+        Width = 360;
+        MinHeight = 104;
+        Height = Math.Clamp(70 + Math.Max(1, Servers.Count) * 34, 104, 300);
+    }
+
+    private void RestoreCompact(object sender, RoutedEventArgs e)
+    {
+        CompactPanel.Visibility = Visibility.Collapsed;
+        FullLayoutVisibility(true);
+        Width = _normalWidth;
+        Height = _normalHeight;
+        MinHeight = _normalMinHeight;
+        Activate();
+    }
+
+    private void CompactVps(object sender, RoutedEventArgs e)
+    {
+        _compactCodex = false;
+        CompactVpsList.Visibility = Visibility.Visible;
+        CompactCodexSummary.Visibility = Visibility.Collapsed;
+        Height = Math.Clamp(70 + Math.Max(1, Servers.Count) * 34, 104, 300);
+    }
+
+    private void CompactCodex(object sender, RoutedEventArgs e)
+    {
+        _compactCodex = true;
+        CompactVpsList.Visibility = Visibility.Collapsed;
+        CompactCodexSummary.Visibility = Visibility.Visible;
+        Height = 118;
+    }
+
+    private void FullLayoutVisibility(bool visible)
+    {
+        var value = visible ? Visibility.Visible : Visibility.Collapsed;
+        NavigationTabs.Visibility = value;
+        DashboardPanelHost.Visibility = value;
+        SettingsPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void SetupTrayIcon()
+    {
+        _trayIcon = new Forms.NotifyIcon
+        {
+            Icon = Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!)!,
+            Text = "Komari Desk Widget",
+            Visible = true
+        };
+        _trayIcon.DoubleClick += (_, _) => { if (CompactPanel.Visibility == Visibility.Visible) RestoreCompact(this, new RoutedEventArgs()); else { Show(); Activate(); } };
+        var menu = new Forms.ContextMenuStrip();
+        menu.Items.Add("显示窗口", null, (_, _) => { Show(); Activate(); });
+        menu.Items.Add("退出", null, (_, _) => { _allowExit = true; _trayIcon!.Dispose(); Application.Current.Shutdown(); });
+        _trayIcon.ContextMenuStrip = menu;
+    }
+
+    public void AllowExit() => _allowExit = true;
     private void DragWindow(object sender, MouseButtonEventArgs e)
     {
         if (_locked || e.ButtonState != MouseButtonState.Pressed) return;
@@ -408,6 +507,9 @@ public sealed class ServerCard
     public string RamUsedText { get; init; } = "▣ 内存";
     public string DiskUsedText { get; init; } = "▣ 硬盘";
     public string NetworkText { get; init; } = "↑ 0 B/s  ↓ 0 B/s";
+    public string CompactText => $"{Name}   CPU: {CpuText}   内存: {RamText}   ↑{FormatRateValue(NetworkUp)}  ↓{FormatRateValue(NetworkDown)}";
+    private long NetworkUp { get; init; }
+    private long NetworkDown { get; init; }
 
     public static ServerCard From(NodeInfo node, RecentStatus? status)
     {
@@ -423,7 +525,9 @@ public sealed class ServerCard
             CoreText = cores > 0 ? $"⚙ {cores} Cores" : "⚙ CPU",
             RamUsedText = $"▣ {FormatSize(status.Ram.Used)}",
             DiskUsedText = $"▣ {FormatSize(status.Disk.Used)}",
-            NetworkText = $"↑ {FormatRate(status.Network.Up)}  ↓ {FormatRate(status.Network.Down)}"
+            NetworkText = $"↑ {FormatRate(status.Network.Up)}  ↓ {FormatRate(status.Network.Down)}",
+            NetworkUp = status.Network.Up,
+            NetworkDown = status.Network.Down
         };
     }
 
@@ -444,5 +548,40 @@ public sealed class ServerCard
         var unit = 0;
         while (size >= 1024 && unit < units.Length - 1) { size /= 1024; unit++; }
         return $"{size:0.##} {units[unit]}";
+    }
+
+    private static string FormatRateValue(long value) => FormatRate(value).Replace("/s", "");
+}
+
+internal sealed class CloseChoiceWindow : Window
+{
+    public CloseChoiceWindow()
+    {
+        Width = 320; Height = 172; WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        WindowStyle = WindowStyle.None; AllowsTransparency = true; ShowInTaskbar = false; Background = Media.Brushes.Transparent;
+        Content = new Border { Background = new Media.SolidColorBrush(Media.Color.FromArgb(245, 43, 52, 70)), BorderBrush = new Media.SolidColorBrush(Media.Color.FromArgb(150, 123, 154, 177)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18), Child = BuildContent() };
+    }
+
+    private UIElement BuildContent()
+    {
+        var root = new Grid();
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        root.Children.Add(new TextBlock { Text = "关闭 Komari", Foreground = Media.Brushes.White, FontSize = 16, FontWeight = FontWeights.Bold });
+        var hint = new TextBlock { Text = "选择退出程序，或缩小为悬浮框继续运行。", Foreground = new Media.SolidColorBrush(Media.Color.FromRgb(185, 198, 216)), FontSize = 12, Margin = new Thickness(0, 9, 0, 0) };
+        Grid.SetRow(hint, 1); root.Children.Add(hint);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom };
+        buttons.Children.Add(Button("缩小", (_, _) => { DialogResult = false; Close(); }));
+        buttons.Children.Add(Button("退出", (_, _) => { DialogResult = true; Close(); }));
+        Grid.SetRow(buttons, 2); root.Children.Add(buttons);
+        return root;
+    }
+
+    private static Button Button(string text, RoutedEventHandler click)
+    {
+        var b = new Button { Content = text, Width = 72, Height = 30, Margin = new Thickness(8, 0, 0, 0), Background = new Media.SolidColorBrush(Media.Color.FromRgb(37, 54, 77)), Foreground = Media.Brushes.White, BorderBrush = new Media.SolidColorBrush(Media.Color.FromRgb(85, 115, 141)), BorderThickness = new Thickness(1), Padding = new Thickness(8, 2, 8, 2) };
+        b.Click += click;
+        return b;
     }
 }

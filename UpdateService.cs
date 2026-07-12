@@ -65,6 +65,7 @@ public sealed class UpdateService
                 UseShellExecute = true
             });
 
+            if (owner is MainWindow mainWindow) mainWindow.AllowExit();
             Application.Current.Shutdown();
         }
         catch (Exception ex)
