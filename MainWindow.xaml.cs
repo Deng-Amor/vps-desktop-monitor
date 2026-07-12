@@ -36,8 +36,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     public string LockButtonTip => _locked ? "已锁定：不能拖动或缩放，点击解锁" : "未锁定：可以拖动和缩放，点击锁定";
     public string VersionText => $"v{UpdateService.CurrentVersion.ToString(3)}";
     public string PanelBackground => $"#{OpacityToAlpha(_config.PanelOpacity)}2B3446";
-    public Visibility VpsPanelVisibility => !_showCodexPanel ? Visibility.Visible : Visibility.Collapsed;
-    public Visibility CodexPanelVisibility => _showCodexPanel ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility VpsPanelVisibility => !_showCodexPanel && HasVps ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility CodexPanelVisibility => _showCodexPanel && _config.ShowCodex ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility VpsTabVisibility => HasVps ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility CodexTabVisibility => _config.ShowCodex ? Visibility.Visible : Visibility.Collapsed;
+    private bool HasVps => _config.ShowVps && !string.IsNullOrWhiteSpace(_config.Endpoint);
     public string VpsTabBackground => !_showCodexPanel ? "#F8FAFC" : "#22FFFFFF";
     public string VpsTabForeground => !_showCodexPanel ? "#111827" : "#DDE8F7";
     public string CodexTabBackground => _showCodexPanel ? "#F8FAFC" : "#22FFFFFF";
@@ -59,7 +62,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 else await LoadStatusAsync();
             };
             _timer.Start();
-            await LoadStatusAsync();
+            if (_showCodexPanel) await LoadCodexStatusAsync(); else if (HasVps) await LoadStatusAsync();
             await UpdateService.CheckForUpdatesAsync(this, silentWhenLatest: true);
         };
     }
@@ -76,7 +79,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         Topmost = _config.Topmost;
         _locked = _config.Locked;
+        if (!HasVps && _config.ShowCodex) _showCodexPanel = true;
+        else if (!_config.ShowCodex) _showCodexPanel = false;
         RefreshLockState();
+        RefreshPanelTabs();
         OnPropertyChanged(nameof(PanelBackground));
         _timer.Interval = TimeSpan.FromSeconds(Math.Max(3, _config.RefreshSeconds));
     }
@@ -175,7 +181,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _showCodexPanel = false;
         RefreshPanelTabs();
         Footer = "VPS 状态";
-        await LoadStatusAsync();
+        if (_showCodexPanel) await LoadCodexStatusAsync(force: true); else if (HasVps) await LoadStatusAsync();
     }
 
     private async void ShowCodexPanel(object sender, RoutedEventArgs e)
@@ -193,6 +199,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(VpsTabForeground));
         OnPropertyChanged(nameof(CodexTabBackground));
         OnPropertyChanged(nameof(CodexTabForeground));
+        OnPropertyChanged(nameof(VpsTabVisibility));
+        OnPropertyChanged(nameof(CodexTabVisibility));
     }
     private void ToggleLock(object sender, RoutedEventArgs e)
     {
@@ -216,9 +224,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshBox.Text = _config.RefreshSeconds.ToString();
         TopmostBox.IsChecked = _config.Topmost;
         LockedBox.IsChecked = _config.Locked;
+        ShowVpsBox.IsChecked = _config.ShowVps;
+        ShowCodexBox.IsChecked = _config.ShowCodex;
         PanelOpacitySlider.Value = Math.Clamp(_config.PanelOpacity, 30, 100);
         UpdatePanelOpacityText();
         DashboardPanelHost.Visibility = Visibility.Collapsed;
+        NavigationTabs.Visibility = Visibility.Collapsed;
         SettingsPanel.Visibility = Visibility.Visible;
         Footer = "设置";
         await LoadNodesForSettingsAsync();
@@ -306,6 +317,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Topmost = TopmostBox.IsChecked == true,
             Locked = LockedBox.IsChecked == true,
             PanelOpacity = Math.Clamp((int)Math.Round(PanelOpacitySlider.Value), 30, 100),
+            ShowVps = ShowVpsBox.IsChecked == true,
+            ShowCodex = ShowCodexBox.IsChecked == true,
             WindowLeft = _config.WindowLeft,
             WindowTop = _config.WindowTop,
             NodeIds = selectedIds.Length == Nodes.Count ? [] : selectedIds
@@ -321,6 +334,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void CloseSettingsView()
     {
         SettingsPanel.Visibility = Visibility.Collapsed;
+        NavigationTabs.Visibility = Visibility.Visible;
         DashboardPanelHost.Visibility = Visibility.Visible;
         Footer = "返回主界面";
     }
@@ -357,6 +371,8 @@ public sealed class WidgetConfig
     public bool Topmost { get; set; } = true;
     public bool Locked { get; set; }
     public int PanelOpacity { get; set; } = 91;
+    public bool ShowVps { get; set; } = true;
+    public bool ShowCodex { get; set; } = true;
     public double? WindowLeft { get; set; }
     public double? WindowTop { get; set; }
     public string[] NodeIds { get; set; } = [];

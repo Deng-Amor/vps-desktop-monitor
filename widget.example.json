@@ -4,6 +4,8 @@
   "topmost": true,
   "locked": false,
   "panelOpacity": 91,
+  "showVps": true,
+  "showCodex": true,
   "windowLeft": null,
   "windowTop": null,
   "nodeIds": []

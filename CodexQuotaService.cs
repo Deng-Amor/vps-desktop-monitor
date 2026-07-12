@@ -153,6 +153,7 @@ public sealed class CodexQuotaSnapshot
     public string PrimaryResetText => Primary?.ResetText ?? "重置时间未知";
     public string SecondaryPercentText => Secondary is null ? "--%" : $"{Secondary.RemainingPercent}%";
     public string SecondaryText => Secondary is null ? "周额度 --" : $"周额度剩余 {Secondary.RemainingPercent}%";
+    public string SecondaryResetText => Secondary?.ResetText ?? "周重置时间未知";
     public string ResetCreditsText => ResetCredits is null ? "重置券 --" : $"重置券 {ResetCredits}";
     public string UpdatedText => $"更新于 {UpdatedAt:HH:mm:ss}";
     public string MessageText => Message ?? "Codex 状态正常";
