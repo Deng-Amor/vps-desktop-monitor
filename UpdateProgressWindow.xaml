@@ -12,10 +12,14 @@
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
-      <DockPanel>
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
         <TextBlock Text="Komari 正在更新" Foreground="#F8FBFF" FontWeight="Bold" FontSize="15" />
-        <TextBlock x:Name="PercentText" Text="0%" Foreground="#B9C6D8" FontSize="12" DockPanel.Dock="Right" />
-      </DockPanel>
+        <TextBlock x:Name="PercentText" Grid.Column="1" Text="0%" Foreground="#B9C6D8" FontSize="12" VerticalAlignment="Center" />
+      </Grid>
       <TextBlock x:Name="StatusText" Grid.Row="1" Text="准备下载更新…" Foreground="#B9C6D8" FontSize="12" Margin="0,8,0,10" />
       <ProgressBar x:Name="DownloadProgress" Grid.Row="2" Minimum="0" Maximum="100" Height="8" Value="0" />
       <TextBlock x:Name="DetailText" Grid.Row="3" Text="请稍等，下载完成后会自动安装并重启。" Foreground="#8EA2BA" FontSize="11" Margin="0,10,0,0" />

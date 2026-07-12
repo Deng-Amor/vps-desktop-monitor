@@ -176,10 +176,9 @@ public sealed class CodexQuotaWindow
         {
             if (ResetsAtUnix is null) return "重置时间未知";
             var resetAt = DateTimeOffset.FromUnixTimeSeconds(ResetsAtUnix.Value).LocalDateTime;
-            var remaining = resetAt - DateTime.Now;
-            if (remaining.TotalSeconds <= 0) return $"已到重置时间 {resetAt:HH:mm}";
-            if (remaining.TotalHours >= 24) return $"约 {(int)Math.Ceiling(remaining.TotalDays)} 天后重置";
-            return $"约 {(int)Math.Ceiling(remaining.TotalMinutes)} 分钟后重置";
+            return resetAt.Date == DateTime.Today
+                ? $"今天 {resetAt:HH:mm} 重置"
+                : $"{resetAt:M月d日 HH:mm} 重置";
         }
     }
 }
