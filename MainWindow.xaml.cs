@@ -51,6 +51,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _config = LoadConfig();
             ApplyConfig();
+            RestoreWindowPosition();
             _timer.Interval = TimeSpan.FromSeconds(Math.Max(3, _config.RefreshSeconds));
             _timer.Tick += async (_, _) =>
             {
@@ -83,6 +84,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void SaveConfig()
     {
         File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "widget.json"), JsonSerializer.Serialize(_config, JsonOptions));
+    }
+
+    private void RestoreWindowPosition()
+    {
+        if (_config.WindowLeft is not double left || _config.WindowTop is not double top) return;
+        if (left + 40 < SystemParameters.VirtualScreenLeft || left > SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 40
+            || top + 40 < SystemParameters.VirtualScreenTop || top > SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 40) return;
+        Left = left;
+        Top = top;
+    }
+
+    private void SaveWindowPosition()
+    {
+        _config.WindowLeft = Left;
+        _config.WindowTop = Top;
+        SaveConfig();
     }
 
     private async Task LoadStatusAsync()
@@ -289,6 +306,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Topmost = TopmostBox.IsChecked == true,
             Locked = LockedBox.IsChecked == true,
             PanelOpacity = Math.Clamp((int)Math.Round(PanelOpacitySlider.Value), 30, 100),
+            WindowLeft = _config.WindowLeft,
+            WindowTop = _config.WindowTop,
             NodeIds = selectedIds.Length == Nodes.Count ? [] : selectedIds
         };
         SaveConfig();
@@ -312,6 +331,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (_locked || e.ButtonState != MouseButtonState.Pressed) return;
         DragMove();
+        SaveWindowPosition();
     }
 
     private void ResizeWindow(object sender, DragDeltaEventArgs e)
@@ -337,6 +357,8 @@ public sealed class WidgetConfig
     public bool Topmost { get; set; } = true;
     public bool Locked { get; set; }
     public int PanelOpacity { get; set; } = 91;
+    public double? WindowLeft { get; set; }
+    public double? WindowTop { get; set; }
     public string[] NodeIds { get; set; } = [];
 }
 
